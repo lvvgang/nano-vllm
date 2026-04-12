@@ -8,26 +8,28 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(path)
     llm = LLM(path, enforce_eager=True, tensor_parallel_size=1)
 
-    sampling_params = SamplingParams(temperature=0.6, max_tokens=1024)
     prompts = [
-        "introduce yourself",
-        "list all prime numbers within 100",
-        "一个月后我要参加托业考试，帮我制定复习计划",
+        ("introduce yourself", SamplingParams(temperature=0.6, max_tokens=256)),
+        ("list all prime numbers within 100", SamplingParams(temperature=0.6, max_tokens=256)),
+        ("一个月后我要参加托业考试，帮我制定复习计划", SamplingParams(temperature=0.6, max_tokens=1024)),
     ]
     prompts = [
-        tokenizer.apply_chat_template(
-            [{"role": "user", "content": prompt}],
-            tokenize=False,
-            add_generation_prompt=True,
+        (
+            tokenizer.apply_chat_template(
+                [{"role": "user", "content": prompt}],
+                tokenize=False,
+                add_generation_prompt=True,
+            ),
+            sp,
         )
-        for prompt in prompts
+        for prompt, sp in prompts
     ]
-    outputs = llm.generate(prompts, sampling_params)
 
-    for prompt, output in zip(prompts, outputs):
+    for prompt, sp in prompts:
+        outputs = llm.generate([prompt], sp)
         print("\n")
         print(f"Prompt: {prompt!r}")
-        print(f"Completion: {output['text']!r}")
+        print(f"Completion: {outputs[0]['text']!r}")
 
 
 if __name__ == "__main__":
